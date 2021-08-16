@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Model\ToDo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use Log;
 class ToDoController extends Controller
@@ -39,6 +40,20 @@ class ToDoController extends Controller
     public function store(Request $request)
     {
         Log::debug($request);
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required',
+            'description' => 'required',
+            'date' => 'required',
+            'reminder' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()->getMessages(),
+            ], 400);
+        }
+
         $todo = new ToDo;
         $todo->title = $request->title;
         $todo->description = $request->description;
@@ -46,7 +61,13 @@ class ToDoController extends Controller
         $todo->reminder = $request->reminder;
         if($request->reminder)
         {
-            $todo->time = Carbon::parse($request->from)->format("H:i");
+            if($request->from && $request->from!=null)
+            {
+                $todo->time = Carbon::parse($request->from)->format("H:i");
+            }
+            else{
+            return  response()->json(['errors' => ["time" => ["Time is required"]]], 400);
+            }
         }
         $todo->save();
     }
